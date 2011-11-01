@@ -47,6 +47,8 @@ function computePosition(entry) {
     
 var commit = data.revisions[100];
 var revisions = data.revisions;
+var dates = data.dates;
+var messages = data.messages;
 //var words = data.words[commit];
 var words = data.merged;
 var sorted = [];
@@ -152,15 +154,18 @@ vis.append("svg:line")
     .attr("y1", 0)
     .attr("y2", h)
     .attr("stroke", "black");
-    
-var timex = d3.scale.linear().domain([0, revisions.length]).range([0,w]),
+
+var mintime = d3.min(revisions, function(c) { return dates[c]; });
+var maxtime = d3.max(revisions, function(c) { return dates[c]; });
+
+var timex = d3.scale.linear().domain([mintime, maxtime]).range([0,w]),
     timey = d3.scale.linear().domain([-1, 1]).range([h + 20, h + 80]);
 
 vis.append("svg:line")
     .attr("y1", timey(0))
     .attr("y2", timey(0))
-    .attr("x1", timex(0))
-    .attr("x2", timex(revisions.length))
+    .attr("x1", timex(mintime))
+    .attr("x2", timex(maxtime))
     .attr("stroke", "black");
     
 var timeline = vis.selectAll("g.timeline")
@@ -172,7 +177,7 @@ var timeline_opacity = (w / 10) / revisions.length;
 alert(timeline_opacity);
 timeline.append("svg:circle")
     .attr("cx", function(d,i) {
-        return timex(i + .5);
+        return timex(dates[d]);
     })
     .attr("cy", timey(0))
     .attr("r", 5)
