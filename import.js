@@ -24,6 +24,8 @@ console.log(git.getOutputPath(repository));
 
 var revisions = [];
 var tallies = {};
+var dates = {};
+var messages = {};
 
 var identifier_re = /[_a-zA-Z][_a-zA-Z0-9]*/g;
 function tallyWords(line, multiplier, tally) {
@@ -94,14 +96,18 @@ function afterRevisionList(code, in_revisions) {
     revisions = in_revisions;
     var remaining_revisions = revisions.slice();
     var commit = remaining_revisions.pop();
-    function afterDiff(code, diff) {
+    function afterDiff(code, date, message, diff) {
         if(code != 0) {
             throw new Error('show of ' + repository + ' ' + commit + ' failed!');
         }
         tallies[commit] = getWordFrequencyFromDiff(diff);
+        messages[commit] = message;
+        dates[commit] = date;
+        console.log('got diff for commit ' + commit);
+        console.log(date);
+        console.log(message);
         if(remaining_revisions.length == 0)
             return afterAllDiffs();
-        console.log('got diff for commit ' + commit);
         commit = remaining_revisions.pop();
         git.getCommitDiff(repository, commit, afterDiff);
     };
@@ -119,6 +125,8 @@ function afterAllDiffs() {
     var data = {
         "repo":repository,
         "revisions":revisions,
+        "messages":messages,
+        "dates":dates,
         "words":tallies,
         "merged":merged,
     };

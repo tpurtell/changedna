@@ -49,12 +49,16 @@ function getRevisionList(repository, branch, callback) {
     });
 }
 function getCommitDiff(repository, commit, callback) {
-    var child = spawn(GIT_BINARY, [ 'show', '--format=format:', commit ], { cwd:getRepositoryPath(repository) });
+    var child = spawn(GIT_BINARY, [ 'show', '--format=format:%ct%n%s', commit ], { cwd:getRepositoryPath(repository) });
     var diff_raw = "";
     child.stdout.on('data', function(data){diff_raw += data});
     child.stderr.on('data', function(data){process.stderr.write(data)});
     child.on('exit', function(code) {
-        callback(code, diff_raw);
+        var header = diff_raw.split('---', 1)[0];
+        var date = header.split('\n', 1)[0] - 0;
+        var note = header.split('\n').slice(1).join('\n').split('diff --git', 1)[0];
+        var diff = diff_raw.substring(diff_raw.indexOf('---'));
+        callback(code, date, note, diff);
     });
 }
 function getCommitUrl(repository, commit, callback) {
