@@ -13,8 +13,11 @@ var base_path = process.cwd();
 function encodeRepository(repository) {
     return encodeURIComponent(repository);
 }
-function getOutputPath(repository) {
+function getOutputBase(repository) {
     return path.join(base_path, 'processed', encodeRepository(repository));
+}
+function getOutputPath(repository) {
+    return getOutputBase(repository) + '.json';
 }
 function getRepositoryPath(repository) {
     return path.join(base_path, 'git', encodeRepository(repository));
@@ -45,13 +48,20 @@ function getRevisionList(repository, branch, callback) {
         callback(code, revisions);
     });
 }
-function getDiff(repository, rev0, rev1) {
+function getCommitDiff(repository, commit, callback) {
+    var child = spawn(GIT_BINARY, [ 'show', '--format=format:', commit ], { cwd:getRepositoryPath(repository) });
+    var diff_raw = "";
+    child.stdout.on('data', function(data){diff_raw += data});
+    child.stderr.on('data', function(data){process.stderr.write(data)});
+    child.on('exit', function(code) {
+        callback(code, diff_raw);
+    });
 }
-function getDiffUrl(repository, rev0, rev1) {
+function getCommitUrl(repository, commit, callback) {
 }
 
 try {
-    fs.mkdirSync(getOutputPath(''),0777);
+    fs.mkdirSync(getOutputBase(''),0777);
 } catch (err) {
     if(err.code != "EEXIST") {
         throw err;
@@ -68,7 +78,7 @@ try {
 exports.getOutputPath = getOutputPath;
 exports.getRepositoryPath = getRepositoryPath;
 exports.checkoutRepository = checkoutRepository;
-exports.getDiff = getDiff;
-exports.getDiffUrl = getDiffUrl;
+exports.getCommitDiff = getCommitDiff;
+exports.getCommitUrl = getCommitUrl;
 exports.getRevisionList = getRevisionList;
 
