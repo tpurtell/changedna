@@ -42,8 +42,8 @@ data = data.filter(function(v) {
 data = data.map(function(v) {
     return Math.abs(v.score / max_score);
 });
-var w = 430,
-    h = 600,
+var w = document.body.offsetWidth - 40,
+    h = document.body.offsetHeight - 20,
     x = d3.scale.linear().domain([0, 1]).range([0, w]),
     y = d3.scale.ordinal().domain(d3.range(data.length)).rangeBands([0, h], .2);
 
