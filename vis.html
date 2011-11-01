@@ -46,6 +46,7 @@ function computePosition(entry) {
 }
     
 var commit = data.revisions[100];
+var revisions = data.revisions;
 //var words = data.words[commit];
 var words = data.merged;
 var sorted = [];
@@ -69,14 +70,14 @@ data = sorted.filter(function(v) {
 });
 data = data.map(computePosition);
 var w = document.body.offsetWidth - 40,
-    h = document.body.offsetHeight - 20,
+    h = document.body.offsetHeight - 80,
     x = d3.scale.linear().domain([-1, 1]).range([0, w]),
     y = d3.scale.linear().domain([0, 0.5]).range([0, h])
 
 var vis = d3.select("body")
   .append("svg:svg")
     .attr("width", w + 40)
-    .attr("height", h + 20)
+    .attr("height", h + 80)
   .append("svg:g")
     .attr("transform", "translate(20,0)");
 
@@ -151,7 +152,33 @@ vis.append("svg:line")
     .attr("y1", 0)
     .attr("y2", h)
     .attr("stroke", "black");
+    
+var timex = d3.scale.linear().domain([0, revisions.length]).range([0,w]),
+    timey = d3.scale.linear().domain([-1, 1]).range([h + 20, h + 80]);
 
+vis.append("svg:line")
+    .attr("y1", timey(0))
+    .attr("y2", timey(0))
+    .attr("x1", timex(0))
+    .attr("x2", timex(revisions.length))
+    .attr("stroke", "black");
+    
+var timeline = vis.selectAll("g.timeline")
+    .data(revisions)
+   .enter().append("svg:g")
+    .attr("class", "timeline");
+
+var timeline_opacity = (w / 10) / revisions.length;
+alert(timeline_opacity);
+timeline.append("svg:circle")
+    .attr("cx", function(d,i) {
+        return timex(i + .5);
+    })
+    .attr("cy", timey(0))
+    .attr("r", 5)
+    .attr("opacity", timeline_opacity)
+    .attr("stroke", "black");
+    
     </script>
 </body>
 </html>
