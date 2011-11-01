@@ -26,12 +26,18 @@ function computePosition(entry) {
     
     var min = 0;
     var max = 1;
-    var per_slot = 1.0 / (CodeZ - CodeA + 1);
+    var lim = 2;
     for(var i = 0; i < word.length; ++i) {
+        if(word.charCodeAt(i) < CodeA || word.charCodeAt(i) > CodeZ)
+            continue;
         var slot = word.charCodeAt(i) - CodeA;
-        var new_slot = (max - min) * per_slot;
-        min += new_slot * slot;
-        max += new_slot * (slot + 1);
+        var per_slot = (max - min) / (CodeZ - CodeA + 1);
+        min += per_slot * slot;
+        max =  min + per_slot;
+        
+        //hack for experiementing with number of subdivisions
+        if(--lim == 0)
+            break;
     }
     entry.min = min;
     entry.max = max;
@@ -60,13 +66,14 @@ sorted.sort(function(a,b) {
         return 0;
 });
 data = sorted.filter(function(v) {
-    return v.score > 1 && v.term.length > 3;
+    return Math.abs(v.score) > 1 && v.term.length > 3;
 });
 data = data.map(computePosition);
+alert(JSON.stringify(data.slice(10)));
 var w = document.body.offsetWidth - 40,
     h = document.body.offsetHeight - 20,
     x = d3.scale.linear().domain([0, 1]).range([0, w]),
-    y = d3.scale.ordinal().domain(d3.range(data.length)).rangeBands([0, h], .2);
+    y = d3.scale.linear().domain([0, 1]).range([0, h])
 
 var vis = d3.select("body")
   .append("svg:svg")
@@ -79,18 +86,16 @@ var bars = vis.selectAll("g.bar")
     .data(data)
   .enter().append("svg:g")
     .attr("class", "bar")
-    .attr("transform", function(d, i) { return "translate(0," + y(i) + ")"; });
+    .attr("transform", function(d, i) { return "translate(0," + y(d.min) + ")"; });
 
 bars.append("svg:rect")
     .attr("fill", "steelblue")
-    .attr("x", 0)
-    .attr("y", function(d, i) { 
-        return y(i); 
-     })
     .attr("width", function(d, i) { 
         return x(Math.abs(d.score / max_score)); 
      })
-    .attr("height", y.rangeBand());
+    .attr("height", function(d, i) { 
+        return y(d.max - d.min); 
+     });
 
 //bars.append("svg:text")
 //    .attr("x", x)
