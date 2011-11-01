@@ -32,18 +32,23 @@ function tallyWords(line, multiplier, tally) {
         return;
     for(var i = 0; i < terms.length; ++i) {
         var term = terms[i]
-        if(term in tally) {
+        if(term in tally && !isFunction(tally[term])) {
             tally[term] += multiplier;
         } else {
             tally[term] = multiplier;
         }
     }
 }
+function isFunction(functionToCheck) {
+ var getType = {};
+ return functionToCheck && getType.toString.call(functionToCheck) == '[object Function]';
+}
+
 function mergeTallies(merged) {
     for(var i = 1; i < arguments.length; ++i) {
         var tally = arguments[i];
         for(var term in tally) {
-            if(term in merged) {
+            if(term in merged && !isFunction(tally[term]) && !isFunction(merged[term])) {
                 merged[term] += tally[term];
             } else {
                 merged[term] = tally[term];
@@ -104,26 +109,29 @@ function afterRevisionList(code, in_revisions) {
 }
 
 function afterAllDiffs() {
-    var f = fs.createWriteStream(git.getOutputPath(repository));
-    var data = {
-        "repo":repository,
-        "revisions":revisions,
-        "words":tallies,
-    };
-    f.write(JSON.stringify(data));
-    f.end();
-    console.log('summary written');
     var merged = {};
     for(var commit in tallies) {
         mergeTallies(merged, tallies[commit]);
     }
+
+    var f = fs.createWriteStream(git.getOutputPath(repository));
+    f.write('var data = ');
+    var data = {
+        "repo":repository,
+        "revisions":revisions,
+        "words":tallies,
+        "merged":merged,
+    };
+    f.write(JSON.stringify(data));
+    f.end();
+    console.log('summary written');
+
     var sorted = [];
     for(var term in merged) {
         sorted.push({score:merged[term], term:term});
     }
     sorted.sort(function(a,b) { return a.score - b.score; });
     sorted.slice(0, 100);
-    console.log(sorted);
 }
 
 git.checkoutRepository(repository, afterCheckout);
