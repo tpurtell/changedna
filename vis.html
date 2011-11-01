@@ -46,7 +46,6 @@ function computePosition(entry) {
 }
     
 var commit = data.revisions[100];
-alert(commit);
 //var words = data.words[commit];
 var words = data.merged;
 var sorted = [];
@@ -69,11 +68,10 @@ data = sorted.filter(function(v) {
     return Math.abs(v.score) > 1 && v.term.length > 3;
 });
 data = data.map(computePosition);
-alert(JSON.stringify(data.slice(10)));
 var w = document.body.offsetWidth - 40,
     h = document.body.offsetHeight - 20,
-    x = d3.scale.linear().domain([0, 1]).range([0, w]),
-    y = d3.scale.linear().domain([0, 1]).range([0, h])
+    x = d3.scale.linear().domain([-1, 1]).range([0, w]),
+    y = d3.scale.linear().domain([0, 0.5]).range([0, h])
 
 var vis = d3.select("body")
   .append("svg:svg")
@@ -85,17 +83,29 @@ var vis = d3.select("body")
 var bars = vis.selectAll("g.bar")
     .data(data)
   .enter().append("svg:g")
-    .attr("class", "bar")
-    .attr("transform", function(d, i) { return "translate(0," + y(d.min) + ")"; });
+    .attr("class", "bar");
 
 bars.append("svg:rect")
     .attr("fill", "steelblue")
+    .attr("x", function(d, i) { 
+        if(d.min > 0.5) {
+            var score = Math.abs(d.score / max_score);
+            return x(-score); 
+        }
+        return x(0); 
+    })
+    .attr("y", function(d, i) { 
+        if(d.min > 0.5)
+            return y(d.min - 0.5);
+        return y(d.min); 
+    })
     .attr("width", function(d, i) { 
-        return x(Math.abs(d.score / max_score)); 
-     })
+        var score = Math.abs(d.score / max_score);
+        return x(score) - x(0); 
+    })
     .attr("height", function(d, i) { 
-        return y(d.max - d.min); 
-     });
+        return y(d.max) - y(d.min); 
+    });
 
 //bars.append("svg:text")
 //    .attr("x", x)
