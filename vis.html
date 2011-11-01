@@ -14,6 +14,30 @@
 </head>
 <body>
     <script type="text/javascript">
+
+
+var CodeA = 'a'.charCodeAt(0); 
+var CodeZ = 'z'.charCodeAt(0); 
+function computePosition(entry) {
+    var word = entry.term;
+    word = word.toLowerCase();
+    while(word.length > 0 && (word.charCodeAt(0) < CodeA || word.charCodeAt(0) > CodeZ))
+        word = word.substring(1);
+    
+    var min = 0;
+    var max = 1;
+    var per_slot = 1.0 / (CodeZ - CodeA + 1);
+    for(var i = 0; i < word.length; ++i) {
+        var slot = word.charCodeAt(i) - CodeA;
+        var new_slot = (max - min) * per_slot;
+        min += new_slot * slot;
+        max += new_slot * (slot + 1);
+    }
+    entry.min = min;
+    entry.max = max;
+    entry.mid = (min + max) / 2;
+    return entry;
+}
     
 var commit = data.revisions[100];
 alert(commit);
@@ -35,13 +59,10 @@ sorted.sort(function(a,b) {
     else
         return 0;
 });
-data = sorted.slice();
-data = data.filter(function(v) {
+data = sorted.filter(function(v) {
     return v.score > 1 && v.term.length > 3;
 });
-data = data.map(function(v) {
-    return Math.abs(v.score / max_score);
-});
+data = data.map(computePosition);
 var w = document.body.offsetWidth - 40,
     h = document.body.offsetHeight - 20,
     x = d3.scale.linear().domain([0, 1]).range([0, w]),
@@ -62,7 +83,13 @@ var bars = vis.selectAll("g.bar")
 
 bars.append("svg:rect")
     .attr("fill", "steelblue")
-    .attr("width", x)
+    .attr("x", 0)
+    .attr("y", function(d, i) { 
+        return y(i); 
+     })
+    .attr("width", function(d, i) { 
+        return x(Math.abs(d.score / max_score)); 
+     })
     .attr("height", y.rangeBand());
 
 //bars.append("svg:text")
