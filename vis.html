@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>CodeDNA</title>
+    <title>ChangeDNA</title>
     <link rel="stylesheet" href="vis.css" type="text/css" />
     <xlink href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
@@ -13,9 +13,16 @@
     <xscript type="text/javascript" src="processed/git%253A%252F%252Fgithub.com%252Ftpurtell%252Fwhoiswatching.json"></script>
 </head>
 <body>
+    <div style="height:40">
+        <span class="repo">Change DNA for:</span> <span class="repo" id="repo">http://xxx</span> <a target="_blank" class="changeset" id="changeset" href="http://changeset">change set</a>:
+        <span id="message" class="message">A change set messsage</span>
+    </div>
     <div id="controls" style="position:absolute">
         <img style="vertical-align:middle;" id="action" src="pause.png"/>
         <input style="vertical-align:middle;width:40px" type="text" id="delay" value="500">&nbsp;ms
+    </div>
+    <div id="cursors" style="position:absolute">
+        <img style="vertical-align:middle;" id="cursor" src="cursors.png"/>
     </div>
     <script type="text/javascript">
 
@@ -50,8 +57,11 @@ function computeVerticalPosition(buckets, entry) {
         max = min + (max - min) / (CodeZ - CodeA + 1);
         --lim;
     }
-    if(entry.bucket != -1)
+    if(entry.bucket != -1) {
         buckets[entry.bucket].push(entry);
+    } else {
+        //alert(JSON.stringify(entry));
+    }
     entry.miny = min;
     entry.maxy = max;
     entry.midy = (min + max) / 2;
@@ -75,7 +85,7 @@ var messages = data.messages;
 var merged = data.merged;
 
 var w = document.body.offsetWidth - 40,
-    h = document.body.offsetHeight - 80,
+    h = document.body.offsetHeight - 80 - 40,
     leftx = d3.scale.linear().domain([1, 0]).range([0, (w - 60) / 2]),
     lefty = d3.scale.linear().domain([0, 0.5]).range([0, h])
     rightx = d3.scale.linear().domain([0, 1]).range([w / 2 + 30, w]),
@@ -181,7 +191,7 @@ letters.append("svg:text")
 var mintime = d3.min(revisions, function(c) { return dates[c]; });
 var maxtime = d3.max(revisions, function(c) { return dates[c]; });
 
-var timex = d3.scale.linear().domain([mintime, maxtime]).range([100,w]),
+var timex = d3.scale.linear().domain([mintime, maxtime]).range([100,w - 52]),
     timey = d3.scale.linear().domain([-1, 1]).range([h + 20, h + 80]);
 
 vis.append("svg:line")
@@ -210,14 +220,31 @@ timeline.append("svg:circle")
         var a = d3.event;
         })
     .on("mouseout", function() { d3.select(this).attr("r", 5).attr("opacity", timeline_opacity); })
-    .on("click", function(d, i) { activateRevision(i); });
+    .on("click", function(d, i) { pause(); activateRevision(i); });
 
 function isRightPane(d) {
     return d.miny > 0.499;
 }
+String.prototype.endsWith = function(suffix) {
+    return this.indexOf(suffix, this.length - suffix.length) !== -1;
+};
+String.prototype.startsWith = function(prefix) {
+    return this.lastIndexOf(prefix, 0) === 0;
+};
     
+function makeGitHubURL(repo, commit) {
+    repo = repo.split('//')[1];
+    repo = repo.split('/').slice(1).join('/');
+    if(repo.endsWith('.git'))
+        repo = repo.substring(0, repo.length - 4);
+    return "http://github.com/" + repo + "/commit/" + commit;
+}
 function activateRevision(i) {
     commit = i;
+    var rev = data.revisions[i];
+    $("#changeset").text(rev);
+    $("#changeset").attr("href", makeGitHubURL(data.repo, rev));
+    $("#message").text(messages[rev].replace(/\s+/g, ' '));
 
     vis.selectAll("g.timelineactive").remove();
     
@@ -235,7 +262,6 @@ function activateRevision(i) {
         .attr("fill", "red");
 
     var max_score = 0;
-    var rev = data.revisions[i];
     var words = data.words[rev];
     var items = [];
     for(var term in words) {
@@ -349,19 +375,37 @@ var delay = 500;
 function nextCommit() { 
     ++commit;
     commit = commit % revisions.length; 
+    $("#cursor").attr("src", "active.png");
     activateRevision(commit);
-    next_timeout = setTimeout(nextCommit, delay);    
+    window.setTimeout(function() {
+        $("#cursor").attr("src", "cursors.png");
+    }, delay / 2);
+    next_timeout = window.setTimeout(nextCommit, delay);    
 }
+function pause() {
+    if(!next_timeout)
+        return;
+    $("#action").attr("src", "play.png");
+    window.clearTimeout(next_timeout); 
+    next_timeout = undefined; 
+}
+function play() {
+    if(next_timeout)
+        return;
+    $("#action").attr("src", "pause.png");
+    next_timeout = window.setTimeout(nextCommit, 0);    
+}
+
 next_timeout = setTimeout(nextCommit, 0);    
-    $("#controls").css("top", h + 40);
+    $("#controls").css("top", h + 80);
+    $("#cursors").css("top", h + 80);
+    $("#cursors").css("left", w - 10);
+    
     $("#action").click(function() { 
         if(next_timeout) {
-            $(this).attr("src", "play.png");
-            window.clearTimeout(next_timeout);
-            next_timeout = undefined;
+            pause();
         } else {
-            $(this).attr("src", "pause.png");
-            next_timeout = window.setTimeout(nextCommit, 0);    
+            play();
         }
     });
     function updateDelay() {
@@ -372,12 +416,35 @@ next_timeout = setTimeout(nextCommit, 0);
         }
         //in case you set it really big, and then small.. be nice and restart the timer
         if(next_timeout) {
-            window.clearTimeout(next_timeout);
-            next_timeout = window.setTimeout(nextCommit, delay);    
+            pause();
+            play();
         }
 
     }
     $("#delay").change(updateDelay);
+    $("#repo").text(data.repo);
+    $("#changeset").click(pause);
+    $("body").keydown(function(e) {
+        switch (e.which) {
+            case 32: //space
+                if(next_timeout) pause();
+                else play();
+                break;
+            case 40: //down
+            case 39: //right
+                pause();
+                ++commit;
+                commit = commit % revisions.length; 
+                activateRevision(commit);
+                break;
+            case 38: //up
+            case 37: //left
+                --commit;
+                commit = (commit + revisions.length) % revisions.length; 
+                activateRevision(commit);
+                break;
+        }
+    });
     </script>
 </body>
 </html>

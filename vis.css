@@ -5,3 +5,13 @@
 line {
   stroke: black;
 }
+
+.repo {
+  font: 20px sans-serif;
+  font-weight: bold
+}
+
+.changeset {
+  font: 20px sans-serif;
+  font-style:italic;
+}
