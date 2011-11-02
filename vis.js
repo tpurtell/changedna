@@ -57,6 +57,26 @@ var dates = data.dates;
 var messages = data.messages;
 var merged = data.merged;
 
+var start_at = window.location + "";
+start_at = start_at.split('#');
+if(start_at.length > 1)
+    start_at = start_at[1];
+else 
+    start_at = undefined;
+    
+if(start_at) {
+    for(var i = 0; i < revisions.length; ++i) {
+        if(revisions[i].toLowerCase() == start_at.toLowerCase()) {
+            commit = i;
+            break;
+        }
+    }
+    if(revisions[commit].toLowerCase() != start_at.toLowerCase()) {
+        start_at = undefined;
+    }
+}
+
+
 var w = document.body.offsetWidth - 40,
     h = document.body.offsetHeight - 80 - 40,
     leftx = d3.scale.linear().domain([1, 0]).range([0, (w - 60) / 2]),
@@ -385,53 +405,57 @@ function play() {
     next_timeout = window.setTimeout(nextCommit, 0);    
 }
 
-next_timeout = setTimeout(nextCommit, 0);    
-    $("#controls").css("top", h + 80);
-    $("#cursors").css("top", h + 80);
-    $("#cursors").css("left", w - 10);
+if(start_at)
+    activateRevision(commit);
+else
+    next_timeout = setTimeout(nextCommit, 0);
     
-    $("#action").click(function() { 
-        if(next_timeout) {
-            pause();
-        } else {
-            play();
-        }
-    });
-    function updateDelay() {
-        delay = parseInt($(this).attr("value"));
-        if(delay == NaN) {
-            delay = 500;
-            $(this).text("500");
-        }
-        //in case you set it really big, and then small.. be nice and restart the timer
-        if(next_timeout) {
-            pause();
-            play();
-        }
+$("#controls").css("top", h + 80);
+$("#cursors").css("top", h + 80);
+$("#cursors").css("left", w - 10);
 
+$("#action").click(function() { 
+    if(next_timeout) {
+        pause();
+    } else {
+        play();
     }
-    $("#delay").change(updateDelay);
-    $("#repo").text(data.repo);
-    $("#changeset").click(pause);
-    $("body").keydown(function(e) {
-        switch (e.which) {
-            case 32: //space
-                if(next_timeout) pause();
-                else play();
-                break;
-            case 40: //down
-            case 39: //right
-                pause();
-                ++commit;
-                commit = commit % revisions.length; 
-                activateRevision(commit);
-                break;
-            case 38: //up
-            case 37: //left
-                pause();
-                --commit;
-                commit = (commit + revisions.length) % revisions.length; 
-                activateRevision(commit);
-                break;
-        }
-    });
+});
+function updateDelay() {
+    delay = parseInt($(this).attr("value"));
+    if(delay == NaN) {
+        delay = 500;
+        $(this).text("500");
+    }
+    //in case you set it really big, and then small.. be nice and restart the timer
+    if(next_timeout) {
+        pause();
+        play();
+    }
+
+}
+$("#delay").change(updateDelay);
+$("#repo").text(data.repo);
+$("#changeset").click(pause);
+$("body").keydown(function(e) {
+    switch (e.which) {
+        case 32: //space
+            if(next_timeout) pause();
+            else play();
+            break;
+        case 40: //down
+        case 39: //right
+            pause();
+            ++commit;
+            commit = commit % revisions.length; 
+            activateRevision(commit);
+            break;
+        case 38: //up
+        case 37: //left
+            pause();
+            --commit;
+            commit = (commit + revisions.length) % revisions.length; 
+            activateRevision(commit);
+            break;
+    }
+});
