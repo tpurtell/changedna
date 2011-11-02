@@ -392,24 +392,26 @@ function nextCommit() {
     next_timeout = window.setTimeout(nextCommit, delay);    
 }
 function pause() {
+    $("#action").attr("src", "play.png");
     if(!next_timeout)
         return;
-    $("#action").attr("src", "play.png");
     window.clearTimeout(next_timeout); 
     next_timeout = undefined; 
 }
 function play() {
+    $("#action").attr("src", "pause.png");
     if(next_timeout)
         return;
-    $("#action").attr("src", "pause.png");
     next_timeout = window.setTimeout(nextCommit, 0);    
 }
 
-if(start_at)
+if(start_at){
     activateRevision(commit);
-else
+    pause();
+} else {
     next_timeout = setTimeout(nextCommit, 0);
-    
+    play();
+}    
 $("#controls").css("top", h + 80);
 $("#cursors").css("top", h + 80);
 $("#cursors").css("left", w - 10);
