@@ -215,13 +215,13 @@ timeline.append("svg:circle")
         return timex(dates[d]);
     })
     .attr("cy", timey(0))
-    .attr("r", 5)
+    .attr("r", 8)
     .attr("opacity", timeline_opacity)
     .attr("stroke", "black")
     .on("mouseover", function() { 
-        d3.select(this).attr("r", 10).attr("opacity", 1); 
+        d3.select(this).attr("r", 14).attr("opacity", 1); 
     })
-    .on("mouseout", function() { d3.select(this).attr("r", 5).attr("opacity", timeline_opacity); })
+    .on("mouseout", function() { d3.select(this).attr("r", 8).attr("opacity", timeline_opacity); })
     .on("click", function(d, i) { pause(); activateRevision(i); });
 
 function isRightPane(d) {
@@ -294,7 +294,7 @@ function activateRevision(i) {
             return timex(dates[d]);
         })
         .attr("cy", timey(0))
-        .attr("r", 5)
+        .attr("r", 8)
         .attr("fill", "red");
 
     var max_score = 0;
