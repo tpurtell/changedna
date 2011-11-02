@@ -114,7 +114,7 @@ rulesleft.append("svg:line")
     .attr("y1", 0)
     .attr("y2", h)
     .attr("stroke", "white")
-    .attr("stroke-opacity", .3);
+    .attr("stroke-opacity", .15);
 
 
 var rulesright = vis.selectAll("g.ruleright")
@@ -239,6 +239,40 @@ function makeGitHubURL(repo, commit) {
         repo = repo.substring(0, repo.length - 4);
     return "http://github.com/" + repo + "/commit/" + commit;
 }
+//thanks stackoverflow!
+$.fn.textMetrics = function(el) {
+
+  var h = 0, w = 0;
+
+  var div = document.createElement('div');
+  document.body.appendChild(div);
+  $(div).css({
+   position: 'absolute',
+   left: -1000,
+   top: -1000,
+   display: 'none'
+  });
+
+  $(div).html($(el).html());
+  var styles = ['font-size','font-style', 'font-weight', 'font-family','line-height', 'text-transform', 'letter-spacing'];
+  $(styles).each(function() {
+   var s = this.toString();
+   $(div).css(s, $(el).css(s));
+  });
+
+  h = $(div).outerHeight();
+  w = $(div).outerWidth();
+
+  $(div).remove();
+
+  var ret = {
+   height: h,
+   width: w
+  };
+
+  return ret;
+}
+
 function activateRevision(i) {
     commit = i;
     var rev = data.revisions[i];
@@ -352,13 +386,35 @@ function activateRevision(i) {
             }
         });
 
-    //bars.append("svg:text")
-    //    .attr("x", x)
-    //    .attr("y", y.rangeBand() / 2)
+    bars.append("svg:text")
+        .attr("x", function(d, i) { 
+            if(isRightPane(d)) {
+                return rightx(d.midx);
+            } else {
+                return leftx(d.midx); 
+            }
+        })
+        .attr("y", function(d, i) { 
+            if(isRightPane(d)) {
+                return righty(d.midy);
+            } else {
+                return lefty(d.midy); 
+            }
+        })
+       .attr("fill", "black")
+       .text(function(d) {
+            if(isRightPane(d)) {
+                if(d.term.length * 11 > Math.abs(rightx(d.maxx) - rightx(d.minx)))
+                    return "";
+            } else {
+                if(d.term.length * 11 > Math.abs(leftx(d.maxx) - leftx(d.minx)))
+                    return "";
+            }
+            return d.term;
+       })
+       .attr("text-anchor", "middle");
     //    .attr("dx", -6)
     //    .attr("dy", ".35em")
-    //    .attr("fill", "white")
-    //    .attr("text-anchor", "end")
     //    .text(x.tickFormat(100));
 
     //bars.append("svg:text")
