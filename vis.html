@@ -18,7 +18,7 @@
 
 var CodeA = 'a'.charCodeAt(0); 
 var CodeZ = 'z'.charCodeAt(0); 
-function computePosition(entry) {
+function computeVerticalPosition(buckets, entry) {
     var word = entry.term;
     word = word.toLowerCase();
     while(word.length > 0 && (word.charCodeAt(0) < CodeA || word.charCodeAt(0) > CodeZ))
@@ -34,7 +34,9 @@ function computePosition(entry) {
         var per_slot = (max - min) / (CodeZ - CodeA + 1);
         min += per_slot * slot;
         max =  min + per_slot;
-        
+
+        if(lim == 1) 
+            entry.bucket = slot;
         //hack for experiementing with number of subdivisions
         if(--lim == 0)
             break;
@@ -43,12 +45,23 @@ function computePosition(entry) {
         max = min + (max - min) / (CodeZ - CodeA + 1);
         --lim;
     }
-    entry.min = min;
-    entry.max = max;
-    entry.mid = (min + max) / 2;
+    buckets[entry.bucket].push(entry);
+    entry.miny = min;
+    entry.maxy = max;
+    entry.midy = (min + max) / 2;
     return entry;
 }
-    
+function computeHorizontalPosition(bucket) {
+    var x = 0;
+    for(var i = 0; i < bucket.length; ++i) {
+        var entry = bucket[i];
+        entry.minx = x;
+        entry.maxx = x + entry.score;
+        entry.midx = (entry.minx + entry.maxx) / 2;
+        x = entry.maxx;
+    }
+    return bucket;
+}
 var commit = 0;
 var revisions = data.revisions;
 var dates = data.dates;
@@ -188,7 +201,7 @@ timeline.append("svg:circle")
     .attr("stroke", "black");
 
 function isRightPane(d) {
-    return d.min > 0.499;
+    return d.miny > 0.499;
 }
     
 function activateRevision(i) {
@@ -203,12 +216,49 @@ function activateRevision(i) {
     items = items.filter(function(v) {
         return Math.abs(v.score) > 0 && v.term.length > 3;
     });
+    var buckets = [];
+    for(var i = 0; i < 26; ++i)
+        buckets.push([]);
+    items = items.map(function(d) { return computeVerticalPosition(buckets, d);});
+
+    var bucket_tallies = [];
+    bucket_tallies.length = 26;
+    var max_bucket = 0;
+    for(var i = 0; i < 26; ++i) {
+        var bucket = buckets[i];
+        bucket.sort(function(a,b) {
+            var al = a.term.toLowerCase();
+            var bl = b.term.toLowerCase();
+            if(al < bl)
+                return -1;
+            if(al > bl)
+                return 1;
+            return 0;
+        });
+        bucket_tallies[i] = 0;
+        for(var j = 0; j < bucket.length; ++j) {
+            bucket_tallies[i] += Math.abs(bucket[j].count);
+        }
+        if(bucket_tallies[i] > max_bucket)
+            max_bucket = bucket_tallies[i];
+    }
+    
     items.map(function(i) {
         if(Math.abs(i.score) > max_score)
             max_score = Math.abs(i.score);
     });
-    items = items.map(computePosition);
-    items = items.map(function(d) { d.score /= max_score; d.score = Math.abs(d.score); return d;});
+    items = items.map(function(d) { d.score /= max_bucket; d.score = Math.abs(d.score); return d;});
+
+    //compute the stacking
+    buckets = buckets.map(function(d) { return computeHorizontalPosition(d);});
+    //flip the first half of the plot so the alphabetical sort order is always on the right
+    for(var i = 0; i < 13; ++i) {
+        buckets[i] = buckets[i].map(function(e) {
+            e.minx = bucket_tallies[i] / max_bucket - e.minx;
+            e.maxx = bucket_tallies[i] / max_bucket - e.maxx;
+            e.midx = bucket_tallies[i] / max_bucket - e.midx;
+        });        
+    }
 
     vis.selectAll("g.bar").remove();
 
@@ -220,32 +270,34 @@ function activateRevision(i) {
     bars.append("svg:rect")
         .attr("fill", "steelblue")
         .attr("opacity", 0.3)
+        .attr("stroke", "black")
+        .attr("stroke-width", 1)
         .attr("x", function(d, i) { 
             if(isRightPane(d)) {
-                return rightx(0);
+                return rightx(d.minx);
             } else {
-                return leftx(d.score); 
+                return leftx(d.minx); 
             }
         })
         .attr("y", function(d, i) { 
             if(isRightPane(d)) {
-                return righty(d.min);
+                return righty(d.miny);
             } else {
-                return lefty(d.min); 
+                return lefty(d.miny); 
             }
         })
         .attr("width", function(d, i) { 
             if(isRightPane(d)) {
-                return Math.abs(rightx(d.score) - rightx(0)); 
+                return Math.abs(rightx(d.maxx) - rightx(d.minx)); 
             } else {
-                return Math.abs(leftx(d.score) - leftx(0)); 
+                return Math.abs(leftx(d.maxx) - leftx(d.minx)); 
             }
         })
         .attr("height", function(d, i) { 
             if(isRightPane(d)) {
-                return righty(d.max) - righty(d.min); 
+                return righty(d.maxy) - righty(d.miny); 
             } else {
-                return lefty(d.max) - lefty(d.min); 
+                return lefty(d.maxy) - lefty(d.miny); 
             }
         });
 
