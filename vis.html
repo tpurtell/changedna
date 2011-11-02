@@ -49,7 +49,8 @@ function computeVerticalPosition(buckets, entry) {
         max = min + (max - min) / (CodeZ - CodeA + 1);
         --lim;
     }
-    buckets[entry.bucket].push(entry);
+    if(entry.bucket)
+        buckets[entry.bucket].push(entry);
     entry.miny = min;
     entry.maxy = max;
     entry.midy = (min + max) / 2;
@@ -202,7 +203,13 @@ timeline.append("svg:circle")
     .attr("cy", timey(0))
     .attr("r", 5)
     .attr("opacity", timeline_opacity)
-    .attr("stroke", "black");
+    .attr("stroke", "black")
+    .on("mouseover", function() { 
+        d3.select(this).attr("r", 10).attr("opacity", 1); 
+        var a = d3.event;
+        })
+    .on("mouseout", function() { d3.select(this).attr("r", 5).attr("opacity", timeline_opacity); })
+    .on("click", function(d, i) { activateRevision(i); });
 
 function isRightPane(d) {
     return d.miny > 0.499;
@@ -210,6 +217,22 @@ function isRightPane(d) {
     
 function activateRevision(i) {
     commit = i;
+
+    vis.selectAll("g.timelineactive").remove();
+    
+    var timelineactive = vis.selectAll("g.timelineactive")
+        .data([revisions[commit]])
+       .enter().append("svg:g")
+        .attr("class", "timelineactive");
+
+    timelineactive.append("svg:circle")
+        .attr("cx", function(d,i) {
+            return timex(dates[d]);
+        })
+        .attr("cy", timey(0))
+        .attr("r", 5)
+        .attr("fill", "red");
+
     var max_score = 0;
     var rev = data.revisions[i];
     var words = data.words[rev];
