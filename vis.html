@@ -7,8 +7,8 @@
     <xscript type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"></script>
     <script type="text/javascript" src="../d3/d3.js?2.4.6"></script>
     <script type="text/javascript" src="../d3/d3.layout.js?2.4.6"></script>
-    <script type="text/javascript" src="processed/git%253A%252F%252Fgithub.com%252FMobisocial%252Fdungbeetle.json"></script>
-    <xscript type="text/javascript" src="processed/git%253A%252F%252Fgithub.com%252Fmbostock%252Fd3.json"></script>
+    <xscript type="text/javascript" src="processed/git%253A%252F%252Fgithub.com%252FMobisocial%252Fdungbeetle.json"></script>
+    <script type="text/javascript" src="processed/git%253A%252F%252Fgithub.com%252Fmbostock%252Fd3.json"></script>
     <xscript type="text/javascript" src="processed/git%253A%252F%252Fgithub.com%252Ftpurtell%252Fsocialbar.json"></script>
     <xscript type="text/javascript" src="processed/git%253A%252F%252Fgithub.com%252Ftpurtell%252Fwhoiswatching.json"></script>
 </head>
@@ -268,7 +268,7 @@ function activateRevision(i) {
         .attr("class", "bar");
 
     bars.append("svg:rect")
-        .attr("fill", "steelblue")
+        .attr("fill", function(d) { return d.count < 0 ? "sandybrown" : "steelblue";})
         .attr("opacity", 0.3)
         .attr("stroke", "black")
         .attr("stroke-width", 1)
