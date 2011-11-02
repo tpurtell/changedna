@@ -7,8 +7,8 @@
     <xscript type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"></script>
     <script type="text/javascript" src="../d3/d3.js?2.4.6"></script>
     <script type="text/javascript" src="../d3/d3.layout.js?2.4.6"></script>
-    <xscript type="text/javascript" src="processed/git%253A%252F%252Fgithub.com%252FMobisocial%252Fdungbeetle.json"></script>
-    <script type="text/javascript" src="processed/git%253A%252F%252Fgithub.com%252Fmbostock%252Fd3.json"></script>
+    <script type="text/javascript" src="processed/git%253A%252F%252Fgithub.com%252FMobisocial%252Fdungbeetle.json"></script>
+    <xscript type="text/javascript" src="processed/git%253A%252F%252Fgithub.com%252Fmbostock%252Fd3.json"></script>
     <xscript type="text/javascript" src="processed/git%253A%252F%252Fgithub.com%252Ftpurtell%252Fsocialbar.json"></script>
     <xscript type="text/javascript" src="processed/git%253A%252F%252Fgithub.com%252Ftpurtell%252Fwhoiswatching.json"></script>
 </head>
@@ -57,8 +57,10 @@ var merged = data.merged;
 
 var w = document.body.offsetWidth - 40,
     h = document.body.offsetHeight - 80,
-    x = d3.scale.linear().domain([-1, 1]).range([0, w]),
-    y = d3.scale.linear().domain([0, 0.5]).range([0, h])
+    leftx = d3.scale.linear().domain([1, 0]).range([0, (w - 60) / 2]),
+    lefty = d3.scale.linear().domain([0, 0.5]).range([0, h])
+    rightx = d3.scale.linear().domain([0, 1]).range([w / 2 + 30, w]),
+    righty = d3.scale.linear().domain([0.5, 1.0]).range([0, h])
 
 var vis = d3.select("body")
   .append("svg:svg")
@@ -68,32 +70,61 @@ var vis = d3.select("body")
     .attr("transform", "translate(20,0)");
 
 
-var rules = vis.selectAll("g.rule")
-    .data(x.ticks(10))
+var rulesleft = vis.selectAll("g.ruleleft")
+    .data(leftx.ticks(10))
   .enter().append("svg:g")
     .attr("class", "rule")
-    .attr("transform", function(d) { return "translate(" + x(d) + ",0)"; });
+    .attr("transform", function(d) { return "translate(" + leftx(d) + ",0)"; });
 
-rules.append("svg:line")
+rulesleft.append("svg:line")
     .attr("y1", h)
     .attr("y2", h + 6)
     .attr("stroke", "black");
 
-rules.append("svg:line")
+rulesleft.append("svg:line")
     .attr("y1", 0)
     .attr("y2", h)
     .attr("stroke", "white")
     .attr("stroke-opacity", .3);
 
-rules.append("svg:text")
-    .attr("y", h + 9)
-    .attr("dy", ".71em")
-    .attr("text-anchor", "middle")
-    .text(x.tickFormat(10));
 
-vis.append("svg:line")
+var rulesright = vis.selectAll("g.ruleright")
+    .data(rightx.ticks(10))
+  .enter().append("svg:g")
+    .attr("class", "rule")
+    .attr("transform", function(d) { return "translate(" + rightx(d) + ",0)"; });
+
+rulesright.append("svg:line")
+    .attr("y1", h)
+    .attr("y2", h + 6)
+    .attr("stroke", "black");
+
+rulesright.append("svg:line")
     .attr("y1", 0)
     .attr("y2", h)
+    .attr("stroke", "white")
+    .attr("stroke-opacity", .3);
+    
+//rules.append("svg:text")
+//    .attr("y", h + 9)
+//    .attr("dy", ".71em")
+//    .attr("text-anchor", "middle")
+//    .text(x.tickFormat(10));
+
+vis.append("svg:line")
+    .attr("x1", leftx(0))
+    .attr("x2", leftx(0))
+    .attr("y1", 0)
+    .attr("y2", h)
+    .attr("stroke-width", 3)
+    .attr("stroke", "black");
+
+vis.append("svg:line")
+    .attr("x1", rightx(0))
+    .attr("x2", rightx(0))
+    .attr("y1", 0)
+    .attr("y2", h)
+    .attr("stroke-width", 3)
     .attr("stroke", "black");
 
 var mintime = d3.min(revisions, function(c) { return dates[c]; });
@@ -124,6 +155,9 @@ timeline.append("svg:circle")
     .attr("opacity", timeline_opacity)
     .attr("stroke", "black");
 
+function isRightPane(d) {
+    return d.min > 0.499;
+}
     
 function activateRevision(i) {
     commit = i;
@@ -132,7 +166,7 @@ function activateRevision(i) {
     var words = data.words[rev];
     var items = [];
     for(var term in words) {
-        items.push({term:term, score:words[term]});
+        items.push({term:term, count:words[term], score:words[term]});
     }
     items = items.filter(function(v) {
         return Math.abs(v.score) > 0 && v.term.length > 3;
@@ -142,6 +176,7 @@ function activateRevision(i) {
             max_score = Math.abs(i.score);
     });
     items = items.map(computePosition);
+    items = items.map(function(d) { d.score /= max_score; d.score = Math.abs(d.score); return d;});
 
     vis.selectAll("g.bar").remove();
 
@@ -154,23 +189,32 @@ function activateRevision(i) {
         .attr("fill", "steelblue")
         .attr("opacity", 0.3)
         .attr("x", function(d, i) { 
-            if(d.min > 0.4999) {
-                var score = Math.abs(d.score / max_score);
-                return x(-score); 
+            if(isRightPane(d)) {
+                return rightx(0);
+            } else {
+                return leftx(d.score); 
             }
-            return x(0); 
         })
         .attr("y", function(d, i) { 
-            if(d.min > 0.4999)
-                return y(d.min - 0.5);
-            return y(d.min); 
+            if(isRightPane(d)) {
+                return righty(d.min);
+            } else {
+                return lefty(d.min); 
+            }
         })
         .attr("width", function(d, i) { 
-            var score = Math.abs(d.score / max_score);
-            return x(score) - x(0); 
+            if(isRightPane(d)) {
+                return Math.abs(rightx(d.score) - rightx(0)); 
+            } else {
+                return Math.abs(leftx(d.score) - leftx(0)); 
+            }
         })
         .attr("height", function(d, i) { 
-            return y(d.max) - y(d.min); 
+            if(isRightPane(d)) {
+                return righty(d.max) - righty(d.min); 
+            } else {
+                return lefty(d.max) - lefty(d.min); 
+            }
         });
 
     //bars.append("svg:text")
