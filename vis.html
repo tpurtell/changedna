@@ -31,6 +31,7 @@ function computeVerticalPosition(buckets, entry) {
     var min = 0;
     var max = 1;
     var lim = 1;
+    entry.bucket = -1;
     for(var i = 0; i < word.length; ++i) {
         if(word.charCodeAt(i) < CodeA || word.charCodeAt(i) > CodeZ)
             continue;
@@ -49,7 +50,7 @@ function computeVerticalPosition(buckets, entry) {
         max = min + (max - min) / (CodeZ - CodeA + 1);
         --lim;
     }
-    if(entry.bucket)
+    if(entry.bucket != -1)
         buckets[entry.bucket].push(entry);
     entry.miny = min;
     entry.maxy = max;
@@ -270,11 +271,8 @@ function activateRevision(i) {
             max_bucket = bucket_tallies[i];
     }
     
-    items.map(function(i) {
-        if(Math.abs(i.score) > max_score)
-            max_score = Math.abs(i.score);
-    });
     items = items.map(function(d) { d.score /= max_bucket; d.score = Math.abs(d.score); return d;});
+    items = items.filter(function(d) { return d.bucket != -1; });
 
     //compute the stacking
     buckets = buckets.map(function(d) { return computeHorizontalPosition(d);});
