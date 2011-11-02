@@ -235,6 +235,10 @@ function makeGitHubURL(repo, commit) {
 function activateRevision(i) {
     commit = i;
     var rev = data.revisions[i];
+    try {
+        history.replaceState(undefined, 'ChangeDNA', (window.location +"").split('#')[0] + '#' + rev);
+    } catch(err) {
+    }
     $("#changeset").text(rev);
     $("#changeset").attr("href", makeGitHubURL(data.repo, rev));
     $("#message").text(messages[rev].replace(/\s+/g, ' '));
