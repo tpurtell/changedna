@@ -3,7 +3,7 @@
     <title>CodeDNA</title>
     <link rel="stylesheet" href="vis.css" type="text/css" />
     <xlink href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
-    <xscript type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
     <xscript type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"></script>
     <script type="text/javascript" src="../d3/d3.js?2.4.6"></script>
     <script type="text/javascript" src="../d3/d3.layout.js?2.4.6"></script>
@@ -13,6 +13,10 @@
     <xscript type="text/javascript" src="processed/git%253A%252F%252Fgithub.com%252Ftpurtell%252Fwhoiswatching.json"></script>
 </head>
 <body>
+    <div id="controls" style="position:absolute">
+        <img style="vertical-align:middle;" id="action" src="pause.png"/>
+        <input style="vertical-align:middle;width:40px" type="text" id="delay" value="500">&nbsp;ms
+    </div>
     <script type="text/javascript">
 
 
@@ -175,7 +179,7 @@ letters.append("svg:text")
 var mintime = d3.min(revisions, function(c) { return dates[c]; });
 var maxtime = d3.max(revisions, function(c) { return dates[c]; });
 
-var timex = d3.scale.linear().domain([mintime, maxtime]).range([0,w]),
+var timex = d3.scale.linear().domain([mintime, maxtime]).range([100,w]),
     timey = d3.scale.linear().domain([-1, 1]).range([h + 20, h + 80]);
 
 vis.append("svg:line")
@@ -184,7 +188,7 @@ vis.append("svg:line")
     .attr("x1", timex(mintime))
     .attr("x2", timex(maxtime))
     .attr("stroke", "black");
-    
+
 var timeline = vis.selectAll("g.timeline")
     .data(revisions)
    .enter().append("svg:g")
@@ -319,13 +323,40 @@ function activateRevision(i) {
     //    .text(function(d, i) { return String.fromCharCode(65 + i); });
 
 }
+var next_timeout;
+var delay = 500;
 function nextCommit() { 
     ++commit;
-    commit = commit % revisions.length;
-    activateRevision(commit);    
-    setTimeout(nextCommit, 500);    
+    commit = commit % revisions.length; 
+    activateRevision(commit);
+    next_timeout = setTimeout(nextCommit, delay);    
 }
-nextCommit();  
+next_timeout = setTimeout(nextCommit, 0);    
+    $("#controls").css("top", h + 40);
+    $("#action").click(function() { 
+        if(next_timeout) {
+            $(this).attr("src", "play.png");
+            window.clearTimeout(next_timeout);
+            next_timeout = undefined;
+        } else {
+            $(this).attr("src", "pause.png");
+            next_timeout = window.setTimeout(nextCommit, 0);    
+        }
+    });
+    function updateDelay() {
+        delay = parseInt($(this).attr("value"));
+        if(delay == NaN) {
+            delay = 500;
+            $(this).text("500");
+        }
+        //in case you set it really big, and then small.. be nice and restart the timer
+        if(next_timeout) {
+            window.clearTimeout(next_timeout);
+            next_timeout = window.setTimeout(nextCommit, delay);    
+        }
+
+    }
+    $("#delay").change(updateDelay);
     </script>
 </body>
 </html>
