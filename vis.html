@@ -439,6 +439,7 @@ next_timeout = setTimeout(nextCommit, 0);
                 break;
             case 38: //up
             case 37: //left
+                pause();
                 --commit;
                 commit = (commit + revisions.length) % revisions.length; 
                 activateRevision(commit);
