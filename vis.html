@@ -126,6 +126,38 @@ vis.append("svg:line")
     .attr("y2", h)
     .attr("stroke-width", 3)
     .attr("stroke", "black");
+    
+var letters = vis.selectAll("g.letters")
+    .data(d3.range(0 + .5 / 26, 1 + .5 / 26, (1.0) / 26))
+   .enter().append("svg:g")
+    .attr("class", "rule");
+
+letters.append("svg:text")
+    .attr("x", leftx(0) + 10)
+    .attr("x", function(d, i) {
+        if(d > 0.499) {
+            return rightx(0);
+        } else {
+            return leftx(0) + 10;
+        }
+    })
+    .attr("y", function(d, i) {
+        if(d > 0.499) {
+            return righty(d);
+        } else {
+            return lefty(d);
+        }
+    })
+    .attr("dx", -6)
+    .attr("dy", ".35em")
+    .attr("text-anchor", function(d, i) {
+        if(d > 0.499) {
+            return "end";
+        } else {
+            return "start";
+        }
+    })
+    .text(function(d, i) { return String.fromCharCode(CodeA + i); });
 
 var mintime = d3.min(revisions, function(c) { return dates[c]; });
 var maxtime = d3.max(revisions, function(c) { return dates[c]; });
