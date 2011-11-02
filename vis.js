@@ -78,8 +78,16 @@ if(start_at) {
 
 
 var w = document.body.offsetWidth - 40,
-    h = document.body.offsetHeight - 80 - 40,
-    leftx = d3.scale.linear().domain([1, 0]).range([0, (w - 60) / 2]),
+    h = document.body.offsetHeight - 80 - 40;
+if(h < 0) {
+    w = document.body.offsetWidth - 40,
+    h = window.innerHeight - 80 - 80;
+}
+if(h < 0) {
+    w = 800;
+    h = 600;
+}
+var leftx = d3.scale.linear().domain([1, 0]).range([0, (w - 60) / 2]),
     lefty = d3.scale.linear().domain([0, 0.5]).range([0, h])
     rightx = d3.scale.linear().domain([0, 1]).range([w / 2 + 30, w]),
     righty = d3.scale.linear().domain([0.5, 1.0]).range([0, h])
