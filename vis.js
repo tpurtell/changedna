@@ -378,6 +378,12 @@ function activateRevision(i) {
                 return lefty(d.midy); 
             }
         })
+        .on("mouseover", function(d) { 
+            $("#word").text(d.term);
+        })
+        .on("mouseout", function() { 
+            $("#word").text("");
+        })
        .attr("fill", "black")
        .text(function(d) {
             if(isRightPane(d)) {

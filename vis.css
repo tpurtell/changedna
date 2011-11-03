@@ -8,10 +8,14 @@ line {
 
 .repo {
   font: 14px sans-serif;
-  font-weight: bold
+  font-weight: bold;
 }
 
 .changeset {
   font: 14px sans-serif;
   font-style:italic;
+}
+
+.word {
+  font-weight: bold;
 }
